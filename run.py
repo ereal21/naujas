@@ -44,7 +44,7 @@ def ensure_requirements() -> None:
         ])
 
 from threading import Thread
-from bot import start_bot
+from bot.main import start_bot
 from bot.ipn_server import app as ipn_app
 
 def run_ipn() -> None:
