@@ -7,25 +7,19 @@ from bot.database.methods import get_category_parent
 
 
 
-def main_menu(role: int, channel: str = None, helper: str = None, lang: str = 'en') -> InlineKeyboardMarkup:
-    """Return simplified main menu markup with only four buttons."""
-    # first row: shop / top up
-    inline_keyboard = [
-        [
-            InlineKeyboardButton(t(lang, 'shop'), callback_data='shop'),
-            InlineKeyboardButton(t(lang, 'top_up'), callback_data='replenish_balance'),
-        ]
-    ]
+def main_menu(role: int, reviews: str = None, price: str = None, lang: str = 'en') -> InlineKeyboardMarkup:
+    """Return main menu markup with shop and navigation buttons."""
+    inline_keyboard = [[InlineKeyboardButton(t(lang, 'shop'), callback_data='shop')]]
 
-    # second row: support / language
-    support_button = []
-    if helper:
-        support_button.append(
-            InlineKeyboardButton(t(lang, 'support'), url=f"https://t.me/{helper.lstrip('@')}")
-        )
-    inline_keyboard.append(
-        support_button + [InlineKeyboardButton(t(lang, 'language'), callback_data='change_language')]
-    )
+    inline_keyboard.append([InlineKeyboardButton(t(lang, 'profile'), callback_data='profile')])
+    inline_keyboard.append([InlineKeyboardButton(t(lang, 'top_up'), callback_data='replenish_balance')])
+
+    if reviews:
+        inline_keyboard.append([InlineKeyboardButton(t(lang, 'reviews'), url=reviews)])
+    if price:
+        inline_keyboard.append([InlineKeyboardButton(t(lang, 'price_list'), url=price)])
+
+    inline_keyboard.append([InlineKeyboardButton(t(lang, 'language'), callback_data='change_language')])
 
     if role > 1:
         inline_keyboard.append([InlineKeyboardButton(t(lang, 'admin_panel'), callback_data='console')])

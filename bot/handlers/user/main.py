@@ -7,7 +7,6 @@ import html
 
 import qrcode
 
-VIDEO_PATH = r"E:\a\IMG_0680.mp4"
 
 from aiogram import Dispatcher
 from aiogram.types import Message, CallbackQuery, ChatType, InlineKeyboardMarkup, InlineKeyboardButton
@@ -75,7 +74,6 @@ async def start(message: Message):
     referral_id = message.text[7:] if message.text[7:] != str(user_id) else None
     user_role = owner if str(user_id) == EnvKeys.OWNER_ID else 1
     create_user(telegram_id=user_id, registration_date=formatted_time, referral_id=referral_id, role=user_role)
-    chat = TgConfig.CHANNEL_URL[13:]
     role_data = check_role(user_id)
     user_db = check_user(user_id)
 
@@ -95,21 +93,9 @@ async def start(message: Message):
         return
 
 
-    # ── send welcome video ─────────────────────────────────────────────────────
-    try:
-        with open(VIDEO_PATH, "rb") as vid:
-            await bot.send_video(
-                chat_id=message.from_user.id,
-                video=vid,
-            )
-    except FileNotFoundError:
-        logging.error(f"Welcome video not found at {VIDEO_PATH}")
-
-
-
     balance = user_db.balance if user_db else 0
     purchases = select_user_items(user_id)
-    markup = main_menu(role_data, chat, TgConfig.HELPER_URL, user_lang)
+    markup = main_menu(role_data, TgConfig.REVIEWS_URL, TgConfig.PRICE_LIST_URL, user_lang)
     text = build_menu_text(message.from_user, balance, purchases, user_lang)
     await bot.send_message(user_id, text, reply_markup=markup)
     await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
@@ -119,7 +105,7 @@ async def back_to_menu_callback_handler(call: CallbackQuery):
     bot, user_id = await get_bot_user_ids(call)
     user = check_user(call.from_user.id)
     user_lang = get_user_language(user_id) or 'en'
-    markup = main_menu(user.role_id, TgConfig.CHANNEL_URL, TgConfig.HELPER_URL, user_lang)
+    markup = main_menu(user.role_id, TgConfig.REVIEWS_URL, TgConfig.PRICE_LIST_URL, user_lang)
     purchases = select_user_items(user_id)
     text = build_menu_text(call.from_user, user.balance, purchases, user_lang)
     await bot.edit_message_text(text,
@@ -340,7 +326,7 @@ async def process_home_menu(call: CallbackQuery):
     bot, user_id = await get_bot_user_ids(call)
     user = check_user(user_id)
     lang = get_user_language(user_id) or 'en'
-    markup = main_menu(user.role_id, TgConfig.CHANNEL_URL, TgConfig.HELPER_URL, lang)
+    markup = main_menu(user.role_id, TgConfig.REVIEWS_URL, TgConfig.PRICE_LIST_URL, lang)
     purchases = select_user_items(user_id)
     text = build_menu_text(call.from_user, user.balance, purchases, lang)
     await bot.send_message(user_id, text, reply_markup=markup)
@@ -673,30 +659,18 @@ async def change_language(call: CallbackQuery):
     )
 
 
-async def set_language(call: CallbackQuery, first_time=False):
+async def set_language(call: CallbackQuery):
     bot, user_id = await get_bot_user_ids(call)
     lang_code = call.data.split('_')[-1]
     update_user_language(user_id, lang_code)
     await call.message.delete()
     role = check_role(user_id)
-    chat = TgConfig.CHANNEL_URL[13:]
     user = check_user(user_id)
     balance = user.balance if user else 0
-    markup = main_menu(role, chat, TgConfig.HELPER_URL, lang_code)
+    markup = main_menu(role, TgConfig.REVIEWS_URL, TgConfig.PRICE_LIST_URL, lang_code)
     purchases = select_user_items(user_id)
     text = build_menu_text(call.from_user, balance, purchases, lang_code)
 
-    # Only send the video if it's the first time (after /start)
-    if first_time:
-        await bot.send_chat_action(user_id, "upload_video")
-        caption = t(lang_code, 'welcome_video_caption') or "Welcome to the bot! 👋"
-        await bot.send_video(
-            user_id,
-            open(r"E:\a\Untitled.mp4", "rb"),
-            caption=caption
-        )
-
-    # Always send the menu (as a new message)
     await bot.send_message(
         chat_id=user_id,
         text=text,
